@@ -1,0 +1,5 @@
+numpy==1.15.1
+pygame==1.9.4
+pygame-assets==0.1
+pygame-engine==0.0.6
+scipy==1.1.0
