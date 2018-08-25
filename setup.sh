@@ -7,5 +7,4 @@ if [[ ! -d $venv_d ]]; then
 fi
 
 pip3 install -r requirements.txt
-
-
+echo 'Done.'
