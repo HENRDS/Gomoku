@@ -22,11 +22,11 @@ class GomokuUI(object):
         self.board_width = self.line_width * N + self.cell_side * (N-1)
         self.clock: pygame.time.Clock = pygame.time.Clock()
         res = './res'
-        self.background = pygame.image.load(f'{res}/img/board.png')
-        self.panel = pygame.image.load(f'{res}/img/panel.png')
+        self.background = pygame.image.load(f'{res}/board.png')
+        self.panel = pygame.image.load(f'{res}/panel.png')
         self.pieces: List[pygame.Surface] = []
         for i in range(2):
-            self.pieces.append(pygame.image.load(f'{res}/img/p{i}.png'))
+            self.pieces.append(pygame.image.load(f'{res}/p{i}.png'))
 
     def side_panel(self, screen: pygame.Surface):
         screen.blit(self.panel, (self.board_width + 2 * self.margin))

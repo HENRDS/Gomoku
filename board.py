@@ -1,6 +1,6 @@
 from typing import List
 from operator import eq
-from itertools import zip_longest
+from collections import Counter
 
 
 class BoardState:
@@ -13,34 +13,32 @@ class BoardState:
                 BoardState.SIDE)] for _ in range(BoardState.SIDE)]
         self.board = board
 
-    def count(self, lst: List[int], *vals: int):
-        res = 0
-        nn = 0
-        for i, n in enumerate(lst):
-            if i < nn:
-                continue
-            if all(map(eq, zip_longest(vals, lst[i: i+len(vals)]))):
-                nn = i + len(vals)
-                res += 1
-        return res
-
     def check_lines(self, jorge: int):
-        open_3 = capped_3 = open_4 = gapped_22 = consec_5 = gapped_3 = 0
+        def count(lst: List[int], *vals: int) -> int:
+            assert len(lst) > len(vals)
+            n = 0
+            pattern_len = len(vals)
+            for cur in range(len(lst) - pattern_len):
+                if all(map(eq, zip(vals, lst[cur: cur + pattern_len]))):
+                    n += 1
+            return n
+
+        open_3 = capped_3 = open_4 = gaped_22 = consec_5 = gaped_3 = 0
         other_jorge = 1 if jorge == 2 else 2
         no_jorge = 0
-        for i in range(len(self.board)):
+        for i in range(BoardState.SIDE):
             row = self.board[i]
-            open_3 += self.count(row, jorge, jorge, jorge)
-            capped_3 += self.count(row, jorge, jorge, jorge, other_jorge)
-            gapped_22 += self.count(row, jorge, jorge, no_jorge, jorge, jorge)
-            open_4 += self.count(row, other_jorge, other_jorge,
-                                 other_jorge, other_jorge, jorge)
+            open_3 += count(row, jorge, jorge, jorge)
+            capped_3 += count(row, jorge, jorge, jorge, other_jorge)
+            gaped_22 += count(row, jorge, jorge, no_jorge, jorge, jorge)
+            open_4 += count(row, other_jorge, other_jorge, other_jorge, other_jorge, jorge)
             col = [r[i] for r in self.board]
-            consec_5 += self.count(col, jorge, jorge, jorge, jorge, jorge)
-            gapped_3 += self.count(col, jorge, jorge, no_jorge, jorge)
+            consec_5 += count(col, jorge, jorge, jorge, jorge, jorge)
+            gaped_3 += count(col, jorge, jorge, no_jorge, jorge)
+
 
     def check_cols(self, jorge: int):
-        capped_4 = gapped_4 = 0
+        capped_4 = gaped_4 = 0
 
-    def score(self):
+    def score(self)-> int:
         pass
