@@ -9,13 +9,15 @@ pygame.init()
 
 class GomokuUI(object):
     def __init__(self, display_width: int = 900, display_height: int = 650):
-        N = 5
-        self.game_state: BoardState= BoardState()
+        N = 15
+        self.game_state: BoardState = BoardState()
         self.display_width: int = display_width
         self.display_height: int = display_height
         self.margin = 23
         self.line_width = 1
         self.cell_side = 40
+        self.box_width = (self.line_width + self.cell_side) * 4
+        self.box_height = (self.line_width + self.cell_side) * 3
         self.title_font = pygame.font.SysFont('Calibri', 24)
         self.score_font = pygame.font.SysFont('Calibri', 20)
         self.time_font = pygame.font.SysFont('Calibri', 20)
@@ -31,12 +33,20 @@ class GomokuUI(object):
     def side_panel(self, screen: pygame.Surface):
         screen.blit(self.panel, (self.board_width + 2 * self.margin))
 
+    def update_info(self, screen: pygame.Surface):
+        pass
+
+    def on_click(self):
+        pass
+
     def main(self):
         screen: pygame.Surface = pygame.display.set_mode((self.display_width, self.display_height),
                                                          pygame.HWSURFACE |
                                                          pygame.DOUBLEBUF)
         pygame.display.set_caption('Gomoku')
         screen.blit(self.background, (0, 0))
+        screen.blit(self.panel, (self.board_width + 3 * self.margin, 0))
+        self.update_info(screen)
 
         while True:
             for event in pygame.event.get():
