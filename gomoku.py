@@ -23,6 +23,8 @@ class GomokuUI(object):
     def __init__(self, display_width: int = 900, display_height: int = 650):
         self.current_player = 1
         N = 15
+        # 1 is user
+        self.current_player = 1
         self.game_state: BoardState = BoardState()
         self.display_width: int = display_width
         self.display_height: int = display_height
