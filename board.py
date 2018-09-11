@@ -15,7 +15,7 @@ class BoardState:
                 BoardState.SIDE)] for _ in range(BoardState.SIDE)]
         self.board = board
 
-    def possible_plays(self, player: int) -> Generator[((int, int), 'BoardState'), None, None]:
+    def possible_plays(self, player: int) -> Generator[Tuple[Tuple[int, int], 'BoardState'], None, None]:
         for i in range(BoardState.SIDE):
             for j in range(BoardState.SIDE):
                 if self.board[i][j] == BoardState.EMPTY_CELL:
@@ -32,7 +32,6 @@ class BoardState:
         bound_end_x = x_end + d_x
         bound_beg_y = y_end - length * d_y
         bound_beg_x = x_end - length * d_x
-
         open_range = range(0, 15)
 
         if bound_end_y in open_range and bound_end_x in open_range and bound_beg_y \
@@ -196,8 +195,3 @@ class BoardState:
         return '\n'.join(map(lambda r: ' '.join(map(str, r)), self.board))
 
 
-if __name__ == '__main__':
-    b = BoardState()
-    b.board[0][1:7] = [1, 1, 2, 1, 1, 2]
-    print(b.detect_row(0, 1))
-    print (b)

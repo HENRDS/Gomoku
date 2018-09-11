@@ -2,11 +2,11 @@ from board import BoardState
 from typing import Tuple, Optional
 
 
-class Player:
-    def __init__(self, number: int, player_count = 2):
+class Jorge:
+    # Temos muitos Jorges aqui
+    def __init__(self, number: int, jorge_count=2):
         self.number = number
-        # Temos muitos Jorges aqui
-        self.jorge_count = player_count
+        self.jorge_count = jorge_count
 
     def minimax(self,
                 state: BoardState,
@@ -23,7 +23,7 @@ class Player:
         for pos, st in state.possible_plays(next_jorge):
             _, val = self.minimax(st, alpha, beta, new_depth, next_jorge)
             if is_my_turn:
-                if val > beta:
+                if val > alpha > beta:
                     break
                 if val > alpha:
                     best_play = pos
@@ -31,6 +31,6 @@ class Player:
             else:
                 if val < alpha:
                     break
-                beta = min(val, beta)
 
+                beta = min(val, beta)
         return best_play, alpha if is_my_turn else beta
