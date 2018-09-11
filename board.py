@@ -109,24 +109,32 @@ class BoardState:
         open_seq, semi_open_seq = 0, 0
 
         for i in range(15):
-            open_seq += self.detect_row(board, col, i, 0, length, 0, 1)[0]
-            semi_open_seq += self.detect_row(board, col, i, 0, length, 0, 1)[1]
+            opens, semis = self.detect_row(board, col, i, 0, length, 0, 1)
+            open_seq += opens
+            semi_open_seq += semis
+            # open_seq += self.detect_row(board, col, i, 0, length, 0, 1)[0]
+            # semi_open_seq += self.detect_row(board, col, i, 0, length, 0, 1)[1]
 
-            open_seq += self.detect_row(board, col, 0, i, length, 1, 0)[0]
-            semi_open_seq += self.detect_row(board, col, 0, i, length, 1, 0)[1]
+            opens, semis = self.detect_row(board, col, 0, i, length, 1, 0)
+            open_seq += opens
+            semi_open_seq += semis
 
-            open_seq += self.detect_row(board, col, 14 - i, 0, length, 1, 1)[0]
-            semi_open_seq += self.detect_row(board, col, 14 - i, 0, length, 1, 1)[1]
+            opens, semis = self.detect_row(board, col, 14 - i, 0, length, 1, 1)
+            open_seq += opens
+            semi_open_seq += semis
 
-            open_seq += self.detect_row(board, col, i, 14, length, 1, -1)[0]
-            semi_open_seq += self.detect_row(board, col, i, 14, length, 1, -1)[1]
+            opens, semis = self.detect_row(board, col, i, 14, length, 1, -1)
+            open_seq += opens
+            semi_open_seq += semis
 
             if i < 14:
-                open_seq += self.detect_row(board, col, 0, i + 1, length, 1, 1)[0]
-                semi_open_seq += self.detect_row(board, col, 0, i + 1, length, 1, 1)[1]
+                opens, semis = self.detect_row(board, col, 0, i + 1, length, 1, 1)
+                open_seq += opens
+                semi_open_seq += semis
 
-                open_seq += self.detect_row(board, col, 0, 13 - i, length, 1, -1)[0]
-                semi_open_seq += self.detect_row(board, col, 0, 13 - 1, length, 1, -1)[1]
+                opens, semis = self.detect_row(board, col, 0, 13 - i, length, 1, -1)[0]
+                open_seq += opens
+                semi_open_seq += semis
 
         return open_seq, semi_open_seq
 
