@@ -83,6 +83,7 @@ class GomokuUI(object):
 
     def update_info(self, screen: pygame.Surface):
         screen.blit(self.panel, (self.board_width + 3 * self.margin, 0))
+
         for player in self.scores.keys():
             self.player_info(screen, int(player))
 
@@ -119,19 +120,15 @@ class GomokuUI(object):
                                       green)
         screen.blit(*score_field)
 
-    # tudo menos posicao das pecas e lugar onde jogador clica
-
-
-
     def main(self):
         screen: pygame.Surface = pygame.display.set_mode((self.display_width, self.display_height),
                                                          pygame.HWSURFACE |
                                                          pygame.DOUBLEBUF)
         pygame.display.set_caption('Gomoku')
         screen.blit(self.background, (0, 0))
-
         self.update_info(screen)
         while True:
+
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
