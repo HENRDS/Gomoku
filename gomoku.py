@@ -1,9 +1,7 @@
-
 import sys
 from typing import List, Tuple
 import pygame
 from board import BoardState
-
 
 pygame.init()
 
@@ -18,12 +16,10 @@ lightgreen = (0, 175, 0)
 bg = (32, 32, 32, 255)
 
 
-
 class GomokuUI(object):
     PLAYER_COUNT = 2
 
     def __init__(self, display_width: int = 900, display_height: int = 650):
-        self.current_player = 1
         N = 15
         # 1 is user
         self.current_player = 1
@@ -120,6 +116,23 @@ class GomokuUI(object):
                                       green)
         screen.blit(*score_field)
 
+    def get_position_piece(self, x: int, y: int):
+        step = self.cell_side + self.line_width
+        size_x = (x - 36) / step
+        size_y = (y - 36) / step
+        print(size_x, size_y)
+        return round(size_x), round(size_y)
+
+    def play_piece(self, col: int, row: int, screen: pygame.Surface):
+        step = self.cell_side + self.line_width
+        d = 23 // 2
+        x = ((col * step) + 36) - d
+        y = ((row * step) + 36) - d
+        piece = self.pieces[self.current_player - 1]
+        screen.blit(piece, (x, y))
+
+
+
     def main(self):
         screen: pygame.Surface = pygame.display.set_mode((self.display_width, self.display_height),
                                                          pygame.HWSURFACE |
@@ -134,15 +147,14 @@ class GomokuUI(object):
                     pygame.quit()
                     sys.exit()
                 elif event.type == pygame.MOUSEBUTTONUP:
-                    x,y = pygame.mouse.get_pos()
-                    print(x,y)
-                    if 36<= x < 609 and 36<= y < 609:
+                    x, y = pygame.mouse.get_pos()
+                    col, row = self.get_position_piece(x,y)
+                    self.play_piece(col, row, screen)
+                    print(col, row)
+                    if 36 <= x < 609 and 36 <= y < 609:
                         self.current_player = 1 if self.current_player == 2 else 2
                         self.update_info(screen)
                 pygame.display.update()
-
-
-
 
 
 if __name__ == '__main__':
