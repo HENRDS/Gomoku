@@ -5,21 +5,28 @@ from board import BoardState
 
 pygame.init()
 
-PLAYERTYPE1 = 'human'
-PLAYERTYPE2 = 'computer'
-
+""" Colors in the interface """
 white = (255, 255, 255)
 black = (0, 0, 0)
-red = (175, 0, 0)
+medium_blue = (0,0,205)
 green = (0, 120, 0)
-lightgreen = (0, 175, 0)
+dodger_blue = (30,144,255)
 bg = (32, 32, 32, 255)
 
 
 class GomokuUI(object):
+    """
+    This class represents the Gomuku interface
+    """
     PLAYER_COUNT = 2
 
     def __init__(self, display_width: int = 900, display_height: int = 650):
+        """
+        Defines the sizes, fonts and images in the game Surface
+
+        :param display_width:
+        :param display_height:
+        """
         N = 15
         # 1 is user
         self.current_player = 1
@@ -55,29 +62,12 @@ class GomokuUI(object):
         self.piece_size = 29
         self.box_line_width = 4
 
-    def side_panel(self, screen: pygame.Surface):
-        screen.blit(self.panel, (self.board_width + 2 * self.margin))
-
-    # def hexa_rgb(self, pixel_value):
-    #     v = pixel_value / 256
-    #     b = pixel_value - v * 256
-    #     pixel_value = v
-    #     v = pixel_value / 256
-    #     g = pixel_value - v * 256
-    #     pixel_value = v
-    #     v = pixel_value / 256
-    #     r = pixel_value - v * 256
-    #     return r, g, b
-
-    # def darkBackground(self, screen, display_width, display_height, hexa_rgb):
-    #     # pygame.draw.rect(screen,bg,(0,0,display_width,display_height))
-    #     pixels = pygame.PixelArray(screen)
-    #     for x in range(display_width):
-    #         for y in range(display_height):
-    #             r, g, b = hexa_rgb(pixels[x][y])
-    #             pixels[x][y] = pygame.Color(4, 4, 4)
-
     def update_info(self, screen: pygame.Surface):
+        """
+        Updates the screen
+        :param screen:
+        :return:
+        """
         screen.blit(self.panel, (self.board_width + 3 * self.margin, 0))
 
         for player in self.scores.keys():
@@ -87,15 +77,29 @@ class GomokuUI(object):
                    pos: Tuple[int, int],
                    font: pygame.font.SysFont,
                    color: Tuple[int, int, int]) -> Tuple[pygame.Surface, pygame.Rect]:
+        """
+        Show the text field in the Surface
+        :param text:
+        :param pos:
+        :param font:
+        :param color:
+        :return:
+        """
         field_surface: pygame.Surface = font.render(text, True, color)
         field_rect: pygame.Rect = field_surface.get_rect()
         field_rect.center = pos
         return field_surface, field_rect
 
     def player_info(self, screen: pygame.Surface, player_no: int):
+        """
+        Show the currently player information
+        :param screen:
+        :param player_no:
+        :return:
+        """
         base_y = self.info1_y + (player_no - 1) * 163
         if player_no == self.current_player:
-            pygame.draw.rect(screen, lightgreen,
+            pygame.draw.rect(screen, dodger_blue,
                              (self.infox + 2,
                               base_y + 2,
                               self.info_width - 1,
@@ -106,7 +110,7 @@ class GomokuUI(object):
                                       (self.infox + self.info_width // 2,
                                        base_y + self.info_height // 2 - 30),
                                       self.title_font,
-                                      red)
+                                      medium_blue)
         screen.blit(*title_field)
 
         score_field = self.text_field(f'Score {self.scores[str(player_no)]}',
@@ -117,6 +121,12 @@ class GomokuUI(object):
         screen.blit(*score_field)
 
     def get_position_piece(self, x: int, y: int):
+        """
+        Get the position at the right spot on the Surface
+        :param x:
+        :param y:
+        :return:
+        """
         step = self.cell_side + self.line_width
         size_x = (x - 36) / step
         size_y = (y - 36) / step
@@ -124,6 +134,13 @@ class GomokuUI(object):
         return round(size_x), round(size_y)
 
     def play_piece(self, col: int, row: int, screen: pygame.Surface):
+        """
+        Select the piece and put on the Surface
+        :param col:
+        :param row:
+        :param screen:
+        :return:
+        """
         step = self.cell_side + self.line_width
         d = 23 // 2
         x = ((col * step) + 36) - d
@@ -148,12 +165,12 @@ class GomokuUI(object):
                     sys.exit()
                 elif event.type == pygame.MOUSEBUTTONUP:
                     x, y = pygame.mouse.get_pos()
-                    col, row = self.get_position_piece(x,y)
-                    self.play_piece(col, row, screen)
-                    print(col, row)
                     if 36 <= x < 609 and 36 <= y < 609:
                         self.current_player = 1 if self.current_player == 2 else 2
                         self.update_info(screen)
+                        col, row = self.get_position_piece(x,y)
+                        self.play_piece(col, row, screen)
+                        print(col, row)
                 pygame.display.update()
 
 
