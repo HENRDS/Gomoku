@@ -1,7 +1,9 @@
+
 import sys
 from typing import List, Tuple
 import pygame
 from board import BoardState
+
 
 pygame.init()
 
@@ -79,7 +81,8 @@ class GomokuUI(object):
     #             r, g, b = hexa_rgb(pixels[x][y])
     #             pixels[x][y] = pygame.Color(4, 4, 4)
 
-    def update_info(self, screen: pygame.Surface, player):
+    def update_info(self, screen: pygame.Surface):
+        screen.blit(self.panel, (self.board_width + 3 * self.margin, 0))
         for player in self.scores.keys():
             self.player_info(screen, int(player))
 
@@ -118,8 +121,7 @@ class GomokuUI(object):
 
     # tudo menos posicao das pecas e lugar onde jogador clica
 
-    def on_click(self):
-        pass
+
 
     def main(self):
         screen: pygame.Surface = pygame.display.set_mode((self.display_width, self.display_height),
@@ -127,15 +129,23 @@ class GomokuUI(object):
                                                          pygame.DOUBLEBUF)
         pygame.display.set_caption('Gomoku')
         screen.blit(self.background, (0, 0))
-        screen.blit(self.panel, (self.board_width + 3 * self.margin, 0))
-        self.update_info(screen, 2)
 
+        self.update_info(screen)
         while True:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
+                elif event.type == pygame.MOUSEBUTTONUP:
+                    x,y = pygame.mouse.get_pos()
+                    print(x,y)
+                    if 36<= x < 609 and 36<= y < 609:
+                        self.current_player = 1 if self.current_player == 2 else 2
+                        self.update_info(screen)
                 pygame.display.update()
+
+
+
 
 
 if __name__ == '__main__':
