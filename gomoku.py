@@ -136,7 +136,7 @@ class GomokuUI(object):
                 elif event.type == pygame.MOUSEBUTTONUP:
                     x,y = pygame.mouse.get_pos()
                     print(x,y)
-                    if 36<= x < 609 and 36<= y < 609:
+                    if 36 <= x < 609 and 36 <= y < 609:
                         self.current_player = 1 if self.current_player == 2 else 2
                         self.update_info(screen)
                 pygame.display.update()
