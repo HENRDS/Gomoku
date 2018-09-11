@@ -1,8 +1,6 @@
-from typing import List, Any, Iterable, Callable, Tuple, Generator
+from typing import List, Any, Iterable, Callable, Tuple, Generator, Dict
 from copy import deepcopy
-from operator import eq, ne, sub, add
-from functools import partial
-from itertools import zip_longest, takewhile, dropwhile, filterfalse
+from operator import add
 
 
 class WinnerException(Exception):
@@ -14,64 +12,87 @@ class BoardState:
     EMPTY_CELL = 0
     SIDE = 15
     MAX_SCORE = 2 ** 32
+    LOOK_AREA = [
+        (-1, 0),
+        (0, -1),
+        (0, 1),
+        (1, 0),
+    ]
 
-    def __init__(self, board: List[List[int]] = None):
+    def __init__(self, board: Dict[Tuple[int, int], int] = None):
         if board is None:
-            board = [[BoardState.EMPTY_CELL for _ in range(
-                BoardState.SIDE)] for _ in range(BoardState.SIDE)]
+            board: Dict[Tuple[int, int], int] = {}
         self.board = board
 
-    # def __getitem__(self, item):
-    #     if isinstance(item, tuple):
-    #         r, c = item
-    #         return self.board[r][c]
-    #     elif isinstance(item, int):
-    #         return
+    def __getitem__(self, item):
+        if isinstance(item, tuple):
+            r, c = item
+            if (0 <= r < BoardState.SIDE) and (0 <= c < BoardState.SIDE):
+                return self.board.get((r, c), BoardState.EMPTY_CELL)
+            raise IndexError(r, c)
+        raise ValueError(item)
 
     def is_valid(self, row: int, col: int)->bool:
-        return (0 <= row < BoardState.SIDE) and (0 <= col < BoardState.SIDE) and (self.board[row][col] == 0)
+        return (0 <= row < BoardState.SIDE) and (0 <= col < BoardState.SIDE) \
+               and self.board.get((row, col), BoardState.EMPTY_CELL) == BoardState.EMPTY_CELL
+
+    def __setitem__(self, key, value):
+        if isinstance(key, tuple):
+            r, c = key
+            if self.is_valid(r, c):
+                self.board[r, c] = value
+            else:
+                raise IndexError(r, c)
+        else:
+            raise ValueError()
 
     def possible_plays(self, player: int) -> Generator[Tuple[Tuple[int, int], 'BoardState'], None, None]:
-        for i in range(BoardState.SIDE):
-            for j in range(BoardState.SIDE):
-                if self.board[i][j] == BoardState.EMPTY_CELL:
-                    yield (i, j), self.after_play(i, j, player)
+        visited = set()
+        queue: List[Tuple[int, int]] = list(self.board.keys())
+        while queue:
+            cur = queue.pop()
+            for delta in BoardState.LOOK_AREA:
+                pos = tuple(map(add, cur, delta))
+                if pos in visited:
+                    continue
+                if self.is_valid(*pos):
+                    queue.append(pos)
+                    yield pos, self.after_play(*pos, player)
+                visited.add(pos)
 
     def after_play(self, row: int, col: int, player: int) -> 'BoardState':
-        assert self.board[row][col] == BoardState.EMPTY_CELL
         new_state = BoardState(board=deepcopy(self.board))
-        new_state.board[row][col] = player
+        new_state[row, col] = player
         return new_state
 
     def bound_count(self, start: Tuple[int, int], end: Tuple[int, int]):
         count = 0
         if all(map(lambda x: 0 <= x < 15, start)):
-            count += 1 if self.board[start[0]][start[1]] else 0
+            count += 1 if self[start] else 0
         if all(map(lambda x: 0 <= x < 15, end)):
-            count += 1 if self.board[end[0]][end[1]] else 0
+            count += 1 if self[end] else 0
         return count
 
     def det_row(self, jorge: int, start: Tuple[int, int], direction: Tuple[int, int])->List[Tuple[int, int]]:
-        col_d, row_d = direction
+        row_d, col_d = direction
         result = []
 
-        def check(col: int, row: int):
+        def check(_row: int, _col: int):
             jorge_count = 0
-            while (0 <= col < 15) and (0 <= row < 15):
-                if self.board[row][col] != jorge:
+            while (0 <= _col < 15) and (0 <= _row < 15):
+                if self[_row, _col] != jorge:
                     break
                 jorge_count += 1
-                row += row_d
-                col += col_d
-            return jorge_count, (col, row)
-
-        col, row = start
+                _row += row_d
+                _col += col_d
+            return jorge_count, (_row, _col)
+        row, col = start
         while (0 <= col < 15) and (0 <= row < 15):
-            jorge_count, end = check(col, row)
+            jorge_count, end = check(row, col)
             if jorge_count:
                 if jorge_count >= 5:
                     raise WinnerException(jorge)
-                bounds = self.bound_count((col - col_d, row - row_d), end)
+                bounds = self.bound_count((row - row_d, col - col_d), end)
                 if bounds < 2:
                     result.append((jorge_count, bounds))
             row += row_d
@@ -81,20 +102,22 @@ class BoardState:
     def detect_rows(self, jorge: int):
         def calculate_score(x)->int:
             n, b = x
-            return 2 ** (3 * n - b)
+            return 2 ** (5 * n - b)
         sequences = []
         for i in range(15):
-            sequences.extend(self.det_row(jorge, (i, 0), (1, 0)))
+            sequences.extend(self.det_row(jorge, (i, 0), (0, 1)))
+            sequences.extend(self.det_row(jorge, (0, i), (1, 0)))
+
             sequences.extend(self.det_row(jorge, (i, 0), (1, 1)))
-            sequences.extend(self.det_row(jorge, (14 - i, 0), (-1, 1)))
-            sequences.extend(self.det_row(jorge, (0, i), (0, 1)))
-            sequences.extend(self.det_row(jorge, (0, 14 - i), (-1, 1)))
             sequences.extend(self.det_row(jorge, (0, i), (1, 1)))
+
+            sequences.extend(self.det_row(jorge, (0, 14 - i), (1, -1)))
+            sequences.extend(self.det_row(jorge, (i, 14), (1, -1)))
         score = 0
         score += sum(map(calculate_score, sequences))
         return score
 
-    def score(self, jorge: int, jorge_count: int):
+    def score(self, jorge: int, jorge_count: int, sub_others= True):
         jorges_score = 0
         other_jorges_score = 0
         try:
@@ -106,10 +129,9 @@ class BoardState:
                     other_jorges_score = max(other_jorges_score, some_score)
         except WinnerException as winner:
             return BoardState.MAX_SCORE if winner.which_jorge == jorge else -BoardState.MAX_SCORE
-
-        return jorges_score - other_jorges_score
+        if sub_others:
+            return jorges_score - other_jorges_score
+        return jorges_score
 
     def __repr__(self):
-        return '\n'.join(map(lambda r: ' '.join(map(str, r)), self.board))
-
-
+        return repr(self.board)

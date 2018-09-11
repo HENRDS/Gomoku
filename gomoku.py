@@ -32,6 +32,7 @@ class GomokuUI(object):
         N = 15
         # 1 is user
         self.jorge = Jorge(2, GomokuUI.PLAYER_COUNT)
+        self.jorges = []
         self.board: BoardState = BoardState()
         self.current_player = 1
         self.game_state: BoardState = BoardState()
@@ -134,14 +135,13 @@ class GomokuUI(object):
         step = self.cell_side + self.line_width
         size_x = (x - 36) / step
         size_y = (y - 36) / step
-        print(size_x, size_y)
         return round(size_x), round(size_y)
 
     def next_player(self):
         score = self.board.score(self.current_player, self.PLAYER_COUNT)
+        self.scores[str(self.current_player)] = score
         if score == BoardState.MAX_SCORE:
             raise WinnerException(self.current_player)
-
         if self.current_player == GomokuUI.PLAYER_COUNT:
             self.current_player = 1
         else:
