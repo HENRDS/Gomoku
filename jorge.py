@@ -15,29 +15,37 @@ class Jorge:
                 depth: int,
                 jorge: int) -> Tuple[Optional[Tuple[int, int]], int]:
         if depth == 0:
-            return None, state.score()
-        best_play: Tuple[int, int]
+            return None, state.score(jorge, self.jorge_count)
+        best_play: Tuple[int, int] = None
         new_depth = depth - 1
         is_my_turn = jorge == self.number
-        next_jorge = ((jorge + 1) % self.jorge_count) + 1
+        next_jorge = 1 if jorge == self.jorge_count else jorge + 1
         for pos, st in state.possible_plays(next_jorge):
             _, val = self.minimax(st, alpha, beta, new_depth, next_jorge)
+            if best_play is None:
+                best_play = pos
+
             if is_my_turn:
-                if val > alpha > beta:
-                    break
                 if val > alpha:
                     best_play = pos
                     alpha = val
             else:
-                if val < alpha:
-                    break
+                if val < beta:
+                    best_play = pos
+                    beta = val
 
-                beta = min(val, beta)
-        return best_play, alpha if is_my_turn else beta
+            if alpha > beta:
+                break
+
+        # print(f'score: {(alpha if is_my_turn else beta)} {best_play}')
+        # if best_play is None:
+        #     raise Exception('Fuck man!')
+        return best_play, (alpha if is_my_turn else beta)
 
     def play(self, state: BoardState) -> Tuple[int, int]:
-        max_score = int(2 ** 31)
-        pos, _ = self.minimax(state, max_score, -max_score, 3, self.number)
+        print('Jorge is thinking')
+        pos, _ = self.minimax(state, -BoardState.MAX_SCORE, BoardState.MAX_SCORE, 3, self.number)
+        print(f'Jorge will play {pos}')
         assert pos is not None
         return pos
 

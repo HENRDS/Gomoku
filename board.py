@@ -1,19 +1,35 @@
 from typing import List, Any, Iterable, Callable, Tuple, Generator
 from copy import deepcopy
-from operator import eq, ne
+from operator import eq, ne, sub, add
 from functools import partial
 from itertools import zip_longest, takewhile, dropwhile, filterfalse
+
+
+class WinnerException(Exception):
+    def __init__(self, jorge: int) -> None:
+        self.which_jorge = jorge
 
 
 class BoardState:
     EMPTY_CELL = 0
     SIDE = 15
+    MAX_SCORE = 2 ** 32
 
     def __init__(self, board: List[List[int]] = None):
         if board is None:
             board = [[BoardState.EMPTY_CELL for _ in range(
                 BoardState.SIDE)] for _ in range(BoardState.SIDE)]
         self.board = board
+
+    # def __getitem__(self, item):
+    #     if isinstance(item, tuple):
+    #         r, c = item
+    #         return self.board[r][c]
+    #     elif isinstance(item, int):
+    #         return
+
+    def is_valid(self, row: int, col: int)->bool:
+        return (0 <= row < BoardState.SIDE) and (0 <= col < BoardState.SIDE) and (self.board[row][col] == 0)
 
     def possible_plays(self, player: int) -> Generator[Tuple[Tuple[int, int], 'BoardState'], None, None]:
         for i in range(BoardState.SIDE):
@@ -27,177 +43,71 @@ class BoardState:
         new_state.board[row][col] = player
         return new_state
 
-    def is_bounded(self, board, y_end, x_end, length, d_y, d_x):
-        bound_end_y = y_end + d_y
-        bound_end_x = x_end + d_x
-        bound_beg_y = y_end - length * d_y
-        bound_beg_x = x_end - length * d_x
-        open_range = range(0, 15)
+    def bound_count(self, start: Tuple[int, int], end: Tuple[int, int]):
+        count = 0
+        if all(map(lambda x: 0 <= x < 15, start)):
+            count += 1 if self.board[start[0]][start[1]] else 0
+        if all(map(lambda x: 0 <= x < 15, end)):
+            count += 1 if self.board[end[0]][end[1]] else 0
+        return count
 
-        if bound_end_y in open_range and bound_end_x in open_range and bound_beg_y \
-                in open_range and bound_beg_x in open_range:
+    def det_row(self, jorge: int, start: Tuple[int, int], direction: Tuple[int, int])->List[Tuple[int, int]]:
+        col_d, row_d = direction
+        result = []
 
-            bound_end = board[bound_end_y][bound_end_x]
-            bound_beg = board[bound_beg_y][bound_beg_x]
+        def check(col: int, row: int):
+            jorge_count = 0
+            while (0 <= col < 15) and (0 <= row < 15):
+                if self.board[row][col] != jorge:
+                    break
+                jorge_count += 1
+                row += row_d
+                col += col_d
+            return jorge_count, (col, row)
 
-            if bound_end == 0 and bound_beg == 0:
-                bound = "OPEN"
-            elif (bound_end == 0) ^ (bound_beg == 0):
-                bound = "SEMIOPEN"
-            else:
-                bound = "CLOSED"
+        col, row = start
+        while (0 <= col < 15) and (0 <= row < 15):
+            jorge_count, end = check(col, row)
+            if jorge_count:
+                if jorge_count >= 5:
+                    raise WinnerException(jorge)
+                bounds = self.bound_count((col - col_d, row - row_d), end)
+                if bounds < 2:
+                    result.append((jorge_count, bounds))
+            row += row_d
+            col += col_d
+        return result
 
-        else:
-            if bound_end_y in open_range and bound_end_x in open_range:
-                bound_end = board[bound_end_y][bound_end_x]
-
-                if bound_end == 0:
-                    bound = "SEMIOPEN"
-                else:
-                    bound = "CLOSED"
-
-
-            elif bound_beg_y in open_range and bound_beg_x in open_range:
-                bound_beg = board[bound_beg_y][bound_beg_x]
-
-                if bound_beg == 0:
-                    bound = "SEMIOPEN"
-                else:
-                    bound = "CLOSED"
-
-            else:
-                bound = "CLOSED"
-
-        return bound
-
-    def detect_row(self, board, col, y_start, x_start, length, d_y, d_x):
-        open_seq_count, semi_open_seq_count = 0, 0
-
-        y = y_start
-        x = x_start
-
-        len = 0
-
-        while x in range(15) and y in range(15):
-            if board[y][x] == col:
-
-                while (y + len * d_y < 15) and (x + len * d_x < 15):
-                    if board[y + len * d_y][x + len * d_x] == col:
-                        len += 1
-                    else:
-                        break
-
-                if len == length:
-                    y_end = y + (length - 1) * d_y
-                    x_end = x + (length - 1) * d_x
-                    if self.is_bounded(board, y_end, x_end, length, d_y, d_x) == "OPEN":
-                        open_seq_count += 1
-                    if self.is_bounded(board, y_end, x_end, length, d_y, d_x) == "SEMIOPEN":
-                        semi_open_seq_count += 1
-
-            if len == 0:
-                x += d_x
-                y += d_y
-            else:
-                y += len * d_y
-                x += len * d_x
-            len = 0
-
-        return open_seq_count, semi_open_seq_count
-
-    def det_rows(self, board, col, length):
-        open_seq, semi_open_seq = 0, 0
-
+    def detect_rows(self, jorge: int):
+        def calculate_score(x)->int:
+            n, b = x
+            return 2 ** (3 * n - b)
+        sequences = []
         for i in range(15):
-            opens, semis = self.detect_row(board, col, i, 0, length, 0, 1)
-            open_seq += opens
-            semi_open_seq += semis
-            # open_seq += self.detect_row(board, col, i, 0, length, 0, 1)[0]
-            # semi_open_seq += self.detect_row(board, col, i, 0, length, 0, 1)[1]
+            sequences.extend(self.det_row(jorge, (i, 0), (1, 0)))
+            sequences.extend(self.det_row(jorge, (i, 0), (1, 1)))
+            sequences.extend(self.det_row(jorge, (14 - i, 0), (-1, 1)))
+            sequences.extend(self.det_row(jorge, (0, i), (0, 1)))
+            sequences.extend(self.det_row(jorge, (0, 14 - i), (-1, 1)))
+            sequences.extend(self.det_row(jorge, (0, i), (1, 1)))
+        score = 0
+        score += sum(map(calculate_score, sequences))
+        return score
 
-            opens, semis = self.detect_row(board, col, 0, i, length, 1, 0)
-            open_seq += opens
-            semi_open_seq += semis
+    def score(self, jorge: int, jorge_count: int):
+        jorges_score = 0
+        other_jorges_score = 0
+        try:
+            for some_jorge in range(1, jorge_count + 1):
+                some_score = self.detect_rows(some_jorge)
+                if some_jorge == jorge:
+                    jorges_score = some_score
+                else:
+                    other_jorges_score = max(other_jorges_score, some_score)
+        except WinnerException as winner:
+            return BoardState.MAX_SCORE if winner.which_jorge == jorge else -BoardState.MAX_SCORE
 
-            opens, semis = self.detect_row(board, col, 14 - i, 0, length, 1, 1)
-            open_seq += opens
-            semi_open_seq += semis
-
-            opens, semis = self.detect_row(board, col, i, 14, length, 1, -1)
-            open_seq += opens
-            semi_open_seq += semis
-
-            if i < 14:
-                opens, semis = self.detect_row(board, col, 0, i + 1, length, 1, 1)
-                open_seq += opens
-                semi_open_seq += semis
-
-                opens, semis = self.detect_row(board, col, 0, 13 - i, length, 1, -1)[0]
-                open_seq += opens
-                semi_open_seq += semis
-
-        return open_seq, semi_open_seq
-
-    def score(self):
-        board = self.board
-        MAX_SCORE = 247338
-
-        open_b = {}
-        semi_open_b = {}
-        open_w = {}
-        semi_open_w = {}
-
-        for i in range(2, 7):
-            open_b[i], semi_open_b[i] = self.det_rows(board, 1, i)
-            open_w[i], semi_open_w[i] = self.det_rows(board, 2, i)
-
-        if open_b[5] >= 1 or semi_open_b[5] >= 1:
-            return -MAX_SCORE
-
-        elif open_w[5] >= 1 or semi_open_w[5] >= 1:
-            return MAX_SCORE
-
-        return (16384 * open_w[4] +
-                8196 * semi_open_w[4] +
-                -16384 * open_b[4] +
-                -8196 * semi_open_b[4] +
-                1024 * open_w[3] +
-                512 * semi_open_w[3] +
-                -1024 * open_b[3] +
-                -512 * semi_open_b[3] +
-                -64 * open_b[2] +
-                -32 * semi_open_b[2] +
-                64 * open_w[2] +
-                32 * semi_open_w[2])
-
-
-
-    # def detect_row(self, row_index: int, player: int):
-    #     def split(lst: Iterable[Any], pred: Callable[[Any], bool]) -> Tuple[List[Any], List[Any]]:
-    #         fst = list(takewhile(pred, lst))
-    #         snd = lst[len(fst):]
-    #         return fst, snd
-    #     row = self.board[row_index]
-    #     score = 0
-    #     left_closed = False
-    #     while row:
-    #         if row[0] == player:
-    #             sequence, row = split(row, partial(eq, player))
-    #             seq_len = len(sequence)
-    #             if row:
-    #                 if row[0] != 0:
-    #                     score += 2 * seq_len
-    #                 elif left_closed:
-    #                     score += seq_len
-    #                 else:
-    #                     score += seq_len * 2 ** seq_len
-    #         elif row[0] == 0:
-    #             row = list(dropwhile(partial(eq, 0), row))
-    #             left_closed = False
-    #         else:
-    #             row = list(dropwhile(partial(ne, player), row))
-    #             left_closed = True
-    #     return score
+        return jorges_score - other_jorges_score
 
     def __repr__(self):
         return '\n'.join(map(lambda r: ' '.join(map(str, r)), self.board))

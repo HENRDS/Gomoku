@@ -1,7 +1,9 @@
 import sys
 from typing import List, Tuple
 import pygame
-from board import BoardState
+from board import BoardState, WinnerException
+from jorge import Jorge
+
 
 pygame.init()
 
@@ -22,6 +24,8 @@ class GomokuUI(object):
     def __init__(self, display_width: int = 900, display_height: int = 650):
         N = 15
         # 1 is user
+        self.jorge = Jorge(2, GomokuUI.PLAYER_COUNT)
+        self.board: BoardState = BoardState()
         self.current_player = 1
         self.game_state: BoardState = BoardState()
         self.display_width: int = display_width
@@ -123,6 +127,16 @@ class GomokuUI(object):
         print(size_x, size_y)
         return round(size_x), round(size_y)
 
+    def next_player(self):
+        score = self.board.score(self.current_player, self.PLAYER_COUNT)
+        if score == BoardState.MAX_SCORE:
+            raise WinnerException(self.current_player)
+
+        if self.current_player == GomokuUI.PLAYER_COUNT:
+            self.current_player = 1
+        else:
+            self.current_player += 1
+
     def play_piece(self, col: int, row: int, screen: pygame.Surface):
         step = self.cell_side + self.line_width
         d = 23 // 2
@@ -130,8 +144,33 @@ class GomokuUI(object):
         y = ((row * step) + 36) - d
         piece = self.pieces[self.current_player - 1]
         screen.blit(piece, (x, y))
+        self.board = self.board.after_play(row, col, self.current_player)
+        self.next_player()
+        self.update_info(screen)
+        pygame.display.update()
 
+    def user_turn(self, screen: pygame.Surface):
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                elif event.type == pygame.MOUSEBUTTONUP:
+                    x, y = pygame.mouse.get_pos()
+                    if (not (36 <= x < 609)) or (not (36 <= y < 609)):
+                        print('invalid pos')
+                        continue
+                    col, row = self.get_position_piece(x, y)
+                    if self.board.is_valid(row, col):
+                        self.play_piece(col, row, screen)
+                        return
+                pygame.display.update()
 
+    def jorge_turn(self, screen: pygame.Surface):
+        row, col = self.jorge.play(self.board)
+        if not self.board.is_valid(row, col):
+            raise Exception()
+        self.play_piece(col, row, screen)
 
     def main(self):
         screen: pygame.Surface = pygame.display.set_mode((self.display_width, self.display_height),
@@ -141,19 +180,14 @@ class GomokuUI(object):
         screen.blit(self.background, (0, 0))
         self.update_info(screen)
         while True:
-
+            if self.current_player == 1:
+                self.user_turn(screen)
+            else:
+                self.jorge_turn(screen)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
-                elif event.type == pygame.MOUSEBUTTONUP:
-                    x, y = pygame.mouse.get_pos()
-                    col, row = self.get_position_piece(x,y)
-                    self.play_piece(col, row, screen)
-                    print(col, row)
-                    if 36 <= x < 609 and 36 <= y < 609:
-                        self.current_player = 1 if self.current_player == 2 else 2
-                        self.update_info(screen)
                 pygame.display.update()
 
 
