@@ -7,12 +7,12 @@ from jorge import Jorge
 
 pygame.init()
 
-""" Colors in the interface """
+# Colors in the interface
 white = (255, 255, 255)
 black = (0, 0, 0)
-medium_blue = (0,0,205)
+medium_blue = (0, 0, 205)
 green = (0, 120, 0)
-dodger_blue = (30,144,255)
+dodger_blue = (30, 144, 255)
 bg = (32, 32, 32, 255)
 
 
@@ -56,6 +56,7 @@ class GomokuUI(object):
         self.scores = {
             str(i): 0 for i in range(1, GomokuUI.PLAYER_COUNT + 1)
         }
+        self.has_winner = False
         self.startx = 0
         self.starty = 0
         self.infox = 3 * self.margin + self.board_width
@@ -137,6 +138,24 @@ class GomokuUI(object):
         size_y = (y - 36) / step
         return round(size_x), round(size_y)
 
+    def win_screen(self, screen: pygame.Surface):
+        if self.current_player == 1:
+            txt = 'You won mothafucker!'
+            img = pygame.image.load('./res/youwon.png')
+            pos = (200, 300)
+        else:
+            img = pygame.image.load('./res/youlost.png')
+            txt = 'You lost mothafucker!'
+            pos = (0, 300)
+
+        leaf = pygame.image.load('./res/med.png')
+        font = pygame.font.SysFont('Calibri', 84)
+        field = self.text_field(txt, (500, 250), font, green)
+        screen.blit(*field)
+        screen.blit(img, pos)
+        screen.blit(leaf, (0, 350))
+        screen.blit(leaf, (600, 350))
+
     def next_player(self):
         score = self.board.score(self.current_player, self.PLAYER_COUNT)
         self.scores[str(self.current_player)] = score
@@ -162,7 +181,12 @@ class GomokuUI(object):
         piece = self.pieces[self.current_player - 1]
         screen.blit(piece, (x, y))
         self.board = self.board.after_play(row, col, self.current_player)
-        self.next_player()
+        try:
+            self.next_player()
+        except WinnerException:
+            self.win_screen(screen)
+            self.has_winner = True
+            return
         self.update_info(screen)
         pygame.display.update()
 
@@ -197,10 +221,11 @@ class GomokuUI(object):
         screen.blit(self.background, (0, 0))
         self.update_info(screen)
         while True:
-            if self.current_player == 1:
-                self.user_turn(screen)
-            else:
-                self.jorge_turn(screen)
+            if not self.has_winner:
+                if self.current_player == 1:
+                    self.user_turn(screen)
+                else:
+                    self.jorge_turn(screen)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
