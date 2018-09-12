@@ -7,12 +7,12 @@ from jorge import Jorge
 
 pygame.init()
 
-""" Colors in the interface """
+# Colors in the interface
 white = (255, 255, 255)
 black = (0, 0, 0)
-medium_blue = (0,0,205)
+medium_blue = (0, 0, 205)
 green = (0, 120, 0)
-dodger_blue = (30,144,255)
+dodger_blue = (30, 144, 255)
 bg = (32, 32, 32, 255)
 
 
@@ -137,8 +137,29 @@ class GomokuUI(object):
         size_y = (y - 36) / step
         return round(size_x), round(size_y)
 
+    def win_screen(self, screen: pygame.Surface):
+        if self.current_player == 1:
+            txt = 'You won!'
+        else:
+            txt = 'You lost!'
+        font = pygame.font.SysFont('Calibri', 84)
+        field = self.text_field(txt, (500, 300), font, green)
+        screen.blit(*field)
+        field = self.text_field('click anywhere to try again', (500, 600), font, green)
+        screen.blit(*field)
+        pygame.display.update()
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                elif event.type == pygame.MOUSEBUTTONUP:
+                    self.reset(screen)
+                    return
+                pygame.display.update()
+
     def next_player(self):
-        score = self.board.score(self.current_player, self.PLAYER_COUNT)
+        score = self.board.score(self.current_player, self.PLAYER_COUNT, False)
         self.scores[str(self.current_player)] = score
         if score == BoardState.MAX_SCORE:
             raise WinnerException(self.current_player)
@@ -162,7 +183,11 @@ class GomokuUI(object):
         piece = self.pieces[self.current_player - 1]
         screen.blit(piece, (x, y))
         self.board = self.board.after_play(row, col, self.current_player)
-        self.next_player()
+        try:
+            self.next_player()
+        except WinnerException:
+            self.win_screen(screen)
+            return
         self.update_info(screen)
         pygame.display.update()
 
@@ -189,13 +214,21 @@ class GomokuUI(object):
             raise Exception()
         self.play_piece(col, row, screen)
 
+    def reset(self, screen: pygame.Surface):
+        screen.blit(self.background, (0, 0))
+        self.update_info(screen)
+        self.current_player = 1
+        self.scores = {
+            k: 0 for k in self.scores.keys()
+        }
+        self.board = BoardState()
+
     def main(self):
         screen: pygame.Surface = pygame.display.set_mode((self.display_width, self.display_height),
                                                          pygame.HWSURFACE |
                                                          pygame.DOUBLEBUF)
         pygame.display.set_caption('Gomoku')
-        screen.blit(self.background, (0, 0))
-        self.update_info(screen)
+        self.reset(screen)
         while True:
             if self.current_player == 1:
                 self.user_turn(screen)
