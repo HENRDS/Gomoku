@@ -1,4 +1,4 @@
-from typing import List, Any, Iterable, Callable, Tuple, Generator, Dict
+from typing import List, Tuple, Generator, Dict
 from copy import deepcopy
 from operator import add
 
@@ -102,7 +102,7 @@ class BoardState:
     def detect_rows(self, jorge: int):
         def calculate_score(x)->int:
             n, b = x
-            return 2 ** (5 * n - b)
+            return 2 ** (3 * n - b)
         sequences = []
         for i in range(15):
             sequences.extend(self.det_row(jorge, (i, 0), (0, 1)))
